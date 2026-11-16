@@ -72,7 +72,7 @@ default sink ─▶ pw-record (monitor) ─▶ ee-spectrum ─▶ http://127.0.0
 
 ## Licence
 
-- Spectrum widget and helper: GPL-3.0-or-later (`licenses/GPL-3.0.txt`).
+- Spectrum widget and helper: GPL-3.0-or-later (`LICENSE`).
 - `donut-face/` is a modified copy of KDE's pie-chart sensor face and stays
   **LGPL-2.0-or-later** under the original authors' copyright (Marco Martin, David
   Edmundson, Arjen Hiemstra, Kai Uwe Broulik); each file keeps its SPDX header
