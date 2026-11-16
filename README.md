@@ -4,6 +4,8 @@ A small set of KDE Plasma 6 panel utilities:
 
 ![The widgets in a Plasma panel: three donut monitors and the spectrum bars](docs/panel.png)
 
+*Shown on a 96 px panel with 6 px bars so the details are visible. On a typical 44 px panel it is half this size; the author's own panel is a slim 22 px.*
+
 | Part | What it is |
 |---|---|
 | **EasyEffects Spectrum** (`plasmoid/`) | A panel widget that draws a live spectrum of the audio *after* EasyEffects (or any other processing), so you can see what your EQ and effects actually do. |
