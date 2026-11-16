@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="barCount" type="Int"><default>24</default><min>4</min><max>96</max></entry>
+    <entry name="barWidth" type="Int"><default>3</default><min>1</min><max>12</max></entry>
+    <entry name="barGap" type="Int"><default>1</default><min>0</min><max>8</max></entry>
+    <entry name="colorLow" type="Color"><default>#c26e62</default></entry>
+    <entry name="colorHigh" type="Color"><default>#d1a752</default></entry>
+    <entry name="feedPort" type="Int"><default>47823</default><min>1024</min><max>65535</max></entry>
+    <entry name="clickCommand" type="String"><default>flatpak run com.github.wwmm.easyeffects</default></entry>
+  </group>
+</kcfg>

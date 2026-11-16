@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [{ "Name": "Trevayne" }],
+        "Category": "Multimedia",
+        "Description": "Spectrum analyser of the audio after EasyEffects",
+        "Icon": "com.github.wwmm.easyeffects",
+        "Id": "org.trevayne.eespectrum",
+        "License": "GPL-3.0+",
+        "Name": "EasyEffects Spectrum",
+        "Version": "1.2"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

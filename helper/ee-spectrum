@@ -1,0 +1,104 @@
+#!/usr/bin/python3 -P
+"""Spectrum feed for the EasyEffects panel widget.
+
+Captures the default sink's monitor (i.e. audio *after* EasyEffects), FFTs it
+and serves log-spaced bar levels (0..1) as JSON on http://127.0.0.1:47823/bands?n=N
+(port: EE_SPECTRUM_PORT, default 47823; listens on 127.0.0.1 only).
+"""
+import json, os, subprocess, threading, time
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import numpy as np
+
+PORT = int(os.environ.get("EE_SPECTRUM_PORT", "47823"))
+RATE = 48000
+HOP = 1024            # ~21 ms per update
+WIN = 4096            # FFT window
+BANDS = 96            # internal resolution
+FMIN, FMAX = 30.0, 16000.0
+DB_FLOOR, DB_CEIL = -75.0, -10.0
+FALL = 0.80           # per-hop decay multiplier (bars fall smoothly)
+
+edges = np.geomspace(FMIN, FMAX, BANDS + 1)
+freqs = np.fft.rfftfreq(WIN, 1 / RATE)
+bins = []
+for lo, hi in zip(edges[:-1], edges[1:]):
+    b = np.where((freqs >= lo) & (freqs < hi))[0]
+    if not len(b):  # very low bands may have no bins -> nearest bin
+        b = np.array([int(np.argmin(abs(freqs - (lo + hi) / 2)))])
+    bins.append(b)
+window = np.hanning(WIN).astype(np.float32)
+wnorm = window.sum() / 2
+# gentle upward tilt (~+0.9 dB/oct) so music doesn't look bass-only
+tilt = 10 * np.log10(np.sqrt(edges[:-1] * edges[1:]) / 1000.0) * 0.3
+
+levels = np.zeros(BANDS, dtype=np.float32)
+last_audio = 0.0
+lock = threading.Lock()
+
+
+def capture():
+    global levels, last_audio
+    buf = np.zeros(WIN, dtype=np.float32)
+    need = HOP * 2 * 4
+    while True:
+        p = subprocess.Popen(
+            ["pw-record", "--rate", str(RATE), "--channels", "2", "--format", "f32",
+             "--latency", "20ms", "-P",
+             "{ stream.capture.sink=true node.name=ee-spectrum-widget "
+             "media.name=ee-spectrum-widget application.name=ee-spectrum-widget "
+             "node.passive=true }", "-"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        # pw-record writes a 24-byte Sun .au header to a pipe; its size field
+        # (0xffffffff) reads as NaN and would poison the smoothed levels forever.
+        if p.stdout.peek(4)[:4] == b"dns.":
+            p.stdout.read(24)
+        while True:
+            raw = p.stdout.read(need)
+            if not raw or len(raw) < need:
+                break
+            st = np.nan_to_num(np.frombuffer(raw, dtype=np.float32).reshape(-1, 2), nan=0.0, posinf=0.0, neginf=0.0)
+            buf = np.roll(buf, -HOP)
+            buf[-HOP:] = st.mean(axis=1)
+            spec = np.abs(np.fft.rfft(buf * window)) / wnorm
+            power = np.array([spec[b].max() for b in bins])
+            db = 20 * np.log10(power + 1e-9) + tilt
+            new = np.clip((db - DB_FLOOR) / (DB_CEIL - DB_FLOOR), 0, 1).astype(np.float32)
+            with lock:
+                levels = np.nan_to_num(np.maximum(new, levels * FALL), nan=0.0)
+                if new.max() > 0.02:
+                    last_audio = time.time()
+        p.kill()
+        p.wait()
+        with lock:
+            levels[:] = 0
+        time.sleep(2)  # restart if PipeWire / the stream went away
+
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        u = urlparse(self.path)
+        if u.path != "/bands":
+            self.send_error(404)
+            return
+        try:
+            n = max(1, min(BANDS, int(parse_qs(u.query).get("n", ["24"])[0])))
+        except ValueError:
+            n = 24
+        with lock:
+            lv = levels.copy()
+            idle = time.time() - last_audio > 2
+        out = {"idle": idle, "bands": [round(float(g.max()), 3) for g in np.array_split(lv, n)]}
+        body = json.dumps(out).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *a):
+        pass
+
+
+threading.Thread(target=capture, daemon=True).start()
+ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

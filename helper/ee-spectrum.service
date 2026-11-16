@@ -1,0 +1,13 @@
+[Unit]
+Description=Spectrum feed for the EasyEffects panel widget
+After=pipewire.service wireplumber.service
+
+[Service]
+ExecStart=%h/.local/bin/ee-spectrum
+Restart=on-failure
+RestartSec=3
+MemoryMax=150M
+Nice=5
+
+[Install]
+WantedBy=default.target

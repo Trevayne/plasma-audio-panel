@@ -1,0 +1,20 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "mart@kde.org",
+                "Name": "Marco Martin"
+            }
+        ],
+        "Icon": "office-chart-pie",
+        "Id": "local.piechart.initial",
+        "License": "LGPLv2+",
+        "Name": "Donut with Initial",
+        "ServiceTypes": [
+            "KSysguard/SensorFace"
+        ],
+        "Version": "1.0",
+        "Website": "https://kde.org"
+    },
+    "X-KDE-ParentApp": "org.kde.plasmashell"
+}
